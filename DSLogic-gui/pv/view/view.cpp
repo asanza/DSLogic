@@ -58,7 +58,7 @@ const int View::RulerHeight = 50;
 const int View::MaxScrollValue = INT_MAX / 2;
 
 //const int View::SignalHeight = 30;s
-const int View::SignalMargin = 10;
+const int View::SignalMargin = 3;
 const int View::SignalSnapGridSize = 10;
 
 const QColor View::CursorAreaColour(220, 231, 243);
@@ -262,7 +262,7 @@ vector< shared_ptr<Trace> > View::get_traces() const
     i = copy(decode_sigs.begin(), decode_sigs.end(), i);
 #endif
 
-    //stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
+    stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
     return traces;
 }
 

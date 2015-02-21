@@ -36,6 +36,8 @@
 
 #include <deque>
 
+#define FILEPATH "filepath"
+
 namespace pv {
 namespace toolbars {
 
@@ -84,14 +86,14 @@ void FileBar::on_actionOpen_triggered()
 {
     // Loas last opened path
     QSettings settings;
-    QString path = settings.value("filepath",QDir::homePath()).toString();
+    QString path = settings.value(FILEPATH,QDir::homePath()).toString();
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), path, tr(
             "DSLogic Sessions (*.dsl);;All Files (*.*)"));
     if (!file_name.isEmpty()){
         QDir dir(file_name);
-        settings.setValue("filepath",dir.absolutePath());
+        settings.setValue(FILEPATH,dir.absolutePath());
         settings.sync();
         load_file(file_name);
     }
@@ -137,10 +139,17 @@ void FileBar::on_actionSave_triggered()
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }else {
-        const QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Save File"), "",
+        QSettings settings;
+        QString path = settings.value(FILEPATH,QDir::homePath()).toString();
+        QString file_name = QFileDialog::getSaveFileName(
+                    this, tr("Save File"), path,
                     tr("DSLogic Session (*.dsl)"));
         if (!file_name.isEmpty()) {
+            QFileInfo f(file_name);
+            settings.setValue(FILEPATH,f.absolutePath());
+            settings.sync();
+            if(f.suffix() != ".dsl")
+                file_name+=tr(".dsl");
             _session.save_file(file_name.toStdString());
         }
     }

@@ -78,6 +78,7 @@ private:
 
     bool eventFilter(QObject *object, QEvent *event);
 
+    void resizeEvent(QResizeEvent* event);
 private slots:
 	void load_file(QString file_name);
 

@@ -45,6 +45,7 @@
 #include <QDesktopWidget>
 #include <QKeyEvent>
 #include <QEvent>
+#include <QSettings>
 
 #include "mainwindow.h"
 
@@ -105,8 +106,20 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
-    setMinimumHeight(680);
-	resize(1024, 768);
+    setMinimumHeight(500);
+    setMinimumWidth(600);
+    QRect screenSize = QApplication::desktop()->availableGeometry (-1);
+    QSettings settings;
+    int height = settings.value("mainwin_height", 0).toInt();
+    int width  = settings.value("mainwin_width", 0).toInt();
+    // look if values found or the saved size fits to screen.
+    if(height == 0 || width == 0
+            || screenSize.width() < width || screenSize.height() < height){
+        // no values found, show maximized
+        showMaximized();
+    }else{
+        resize(width, height);
+    }
 
 	// Set the window icon
 	QIcon icon;
@@ -268,6 +281,15 @@ void MainWindow::session_error(
 	QMetaObject::invokeMethod(this, "show_session_error",
 		Qt::QueuedConnection, Q_ARG(QString, text),
 		Q_ARG(QString, info_text));
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+   QMainWindow::resizeEvent(event);
+   // save new size in settings
+   QSettings settings;
+   settings.setValue("mainwin_height", height());
+   settings.setValue("mainwin_width", width());
 }
 
 void MainWindow::update_device_list()

@@ -283,9 +283,9 @@ void MainWindow::session_error(
 		Q_ARG(QString, info_text));
 }
 
-void MainWindow::resizeEvent(QResizeEvent* event)
+void MainWindow::closeEvent(QCloseEvent *event)
 {
-   QMainWindow::resizeEvent(event);
+   QMainWindow::closeEvent(event);
    // save new size in settings
    QSettings settings;
    settings.setValue("mainwin_height", height());

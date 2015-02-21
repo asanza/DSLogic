@@ -123,9 +123,10 @@ QString Ruler::format_time(double t, unsigned int prefix,
 
 	QString s;
 	QTextStream ts(&s);
-	ts.setRealNumberPrecision(precision);
-	ts << fixed << forcesign << (t  * multiplier) <<
-		SIPrefixes[prefix] << "s";
+    ts.setRealNumberPrecision(precision);
+    if(prefix < 9) // sanity check
+        ts << fixed << forcesign << (t  * multiplier) <<
+            SIPrefixes[prefix] << "s";
 	return s;
 }
 

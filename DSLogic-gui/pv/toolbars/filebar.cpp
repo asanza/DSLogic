@@ -36,7 +36,7 @@
 
 #include <deque>
 
-#define FILEPATH "filepath"
+const QString FILEPATH = "filepath";
 
 namespace pv {
 namespace toolbars {

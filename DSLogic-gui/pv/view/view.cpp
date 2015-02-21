@@ -262,7 +262,7 @@ vector< shared_ptr<Trace> > View::get_traces() const
     i = copy(decode_sigs.begin(), decode_sigs.end(), i);
 #endif
 
-    stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
+    //stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
     return traces;
 }
 

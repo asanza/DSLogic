@@ -136,7 +136,7 @@ void Viewport::paintEvent(QPaintEvent *event)
             t->paint_fore(p, 0, width());
     }
 
-    p.setRenderHint(QPainter::Antialiasing, false);
+    p.setRenderHint(QPainter::Antialiasing, true);
     if (_view.get_signalHeight() != _curSignalHeight)
             _curSignalHeight = _view.get_signalHeight();
 

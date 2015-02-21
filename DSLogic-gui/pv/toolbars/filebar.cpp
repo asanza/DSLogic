@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
+#include <QSettings>
 
 #include "filebar.h"
 #include "../device/devinst.h"
@@ -81,12 +82,19 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
 void FileBar::on_actionOpen_triggered()
 {
+    // Loas last opened path
+    QSettings settings;
+    QString path = settings.value("filepath",QDir::homePath()).toString();
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open File"), "", tr(
-            "DSLogic Sessions (*.dsl)"));
-    if (!file_name.isEmpty())
+        this, tr("Open File"), path, tr(
+            "DSLogic Sessions (*.dsl);;All Files (*.*)"));
+    if (!file_name.isEmpty()){
+        QDir dir(file_name);
+        settings.setValue("filepath",dir.absolutePath());
+        settings.sync();
         load_file(file_name);
+    }
 }
 
 void FileBar::session_error(

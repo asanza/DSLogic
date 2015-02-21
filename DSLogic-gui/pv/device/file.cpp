@@ -44,7 +44,7 @@ std::string File::format_device_title() const
 
 File* File::create(const string &name)
 {
-	if (sr_session_load(name.c_str()) == SR_OK) {
+    if (sr_session_load(name.c_str()) == SR_OK) {
 		GSList *devlist = NULL;
 		sr_session_dev_list(&devlist);
 		sr_session_destroy();
@@ -58,8 +58,10 @@ File* File::create(const string &name)
 				return new SessionFile(name);
 			}
 		}
-	}
-
+    }else{
+        // could not load file.
+        return NULL;
+    }
 	return new InputFile(name);
 }
 

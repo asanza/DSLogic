@@ -115,7 +115,6 @@ boost::shared_ptr<device::DevInst> SigSession::get_device() const
 void SigSession::set_device(shared_ptr<device::DevInst> dev_inst) throw(QString)
 {
     using pv::device::Device;
-
     // Ensure we are not capturing before setting the device
     stop_capture();
 
@@ -143,6 +142,9 @@ void SigSession::set_file(const string &name) throw(QString)
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
     set_device(shared_ptr<device::DevInst>());
+    device::File* t = device::File::create(name);
+    if(t==NULL)
+        throw QString("Wrong Data Format");
     set_device(shared_ptr<device::DevInst>(device::File::create(name)));
 }
 

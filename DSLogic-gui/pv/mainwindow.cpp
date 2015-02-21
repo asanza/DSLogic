@@ -218,8 +218,7 @@ void MainWindow::setup_ui()
     addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
 
 	// Set the title
-    setWindowTitle(QApplication::translate("MainWindow", "DSLogic(Beta)", 0,
-		QApplication::UnicodeUTF8));
+    setWindowTitle(QApplication::translate("MainWindow", "DSLogic(Beta)", 0));
 
 	// Setup _session events
 	connect(&_session, SIGNAL(capture_state_changed(int)), this,
@@ -477,7 +476,7 @@ void MainWindow::on_screenShot()
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
     if (!fileName.isEmpty())
-        pixmap.save(fileName, format.toAscii());
+        pixmap.save(fileName, format.toLatin1());
 }
 
 void MainWindow::on_save()

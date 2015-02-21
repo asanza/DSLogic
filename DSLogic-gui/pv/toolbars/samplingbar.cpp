@@ -32,6 +32,7 @@
 #include <QAction>
 #include <QDebug>
 #include <QLabel>
+#include <QSettings>
 
 #include "samplingbar.h"
 
@@ -48,49 +49,6 @@ using std::string;
 namespace pv {
 namespace toolbars {
 
-const uint64_t SamplingBar::RecordLengths[19] = {
-	1000,
-    2000,
-    4000,
-    8000,
-	10000,
-    20000,
-    40000,
-    80000,
-	100000,
-    200000,
-    400000,
-    800000,
-	1000000,
-	2000000,
-    4000000,
-    8000000,
-	10000000,
-    20000000,
-    40000000,
-};
-
-const uint64_t SamplingBar::DefaultRecordLength = 1000000;
-
-const uint64_t SamplingBar::DSLogic_RecordLengths[15] = {
-    1024,
-    2048,
-    4096,
-    8192,
-    16384,
-    32768,
-    65536,
-    131072,
-    262144,
-    524288,
-    1048576,
-    2097152,
-    4194304,
-    8388608,
-    16777216,
-};
-
-const uint64_t SamplingBar::DSLogic_DefaultRecordLength = 16777216;
 
 SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
@@ -320,7 +278,7 @@ void SamplingBar::update_sample_rate_selector()
 		{
 			char *const s = sr_samplerate_string(elements[i]);
             _sample_rate.addItem(QString(s),
-				qVariantFromValue(elements[i]));
+                qVariantFromValue(elements[i]));
 			g_free(s);
 		}
 
@@ -328,6 +286,15 @@ void SamplingBar::update_sample_rate_selector()
 		g_variant_unref(gvar_list);
 	}
     _updating_sample_rate = false;
+
+    // Set the prefered sample rate (saved from last session)
+    QSettings settings;
+    QString key = QString(dev_inst->format_device_title().c_str()) + "/samplerate";
+    uint64_t value = settings.value(key,0).toULongLong();
+    if(value != 0){
+        // key found. a value for this device was previously saved.
+        set_sample_rate(value);
+    }
 
 	g_variant_unref(gvar_dict);
     update_sample_rate_selector_value();
@@ -380,6 +347,12 @@ void SamplingBar::commit_sample_rate()
 
     if (last_sample_rate != sample_rate)
         update_scale();
+//save sample rate into settings
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    QString key = QString(dev_inst->format_device_title().c_str()) + "/samplerate";
+    QSettings settings;
+    settings.setValue(key,(qulonglong)sample_rate);
+    settings.sync();
 
     _updating_sample_rate = false;
 }
@@ -457,11 +430,18 @@ void SamplingBar::update_sample_count_selector()
         _sample_count.show();
         g_variant_unref(gvar_list);
     }
-
     _updating_sample_count = false;
 
     g_variant_unref(gvar_dict);
     update_sample_count_selector_value();
+    // Set the prefered sample count (saved from last session)
+    QSettings settings;
+    QString key = QString(dev_inst->format_device_title().c_str()) + "/samplecount";
+    uint64_t value = settings.value(key,0).toULongLong();
+    if(value != 0){
+        // key found. a value for this device was previously saved.
+        set_sample_limit(value);
+    }
 }
 
 void SamplingBar::update_sample_count_selector_value()
@@ -509,6 +489,13 @@ void SamplingBar::commit_sample_count()
     get_selected_device()->set_config(NULL, NULL,
                                       SR_CONF_LIMIT_SAMPLES,
                                       g_variant_new_uint64(sample_count));
+
+    // save sample count into settings
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    QString key = QString(dev_inst->format_device_title().c_str()) + "/samplecount";
+    QSettings settings;
+    settings.setValue(key,(qulonglong)sample_count);
+    settings.sync();
 
     _updating_sample_count = false;
 

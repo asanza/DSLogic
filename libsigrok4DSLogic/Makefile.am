@@ -17,10 +17,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
-
 ACLOCAL_AMFLAGS = -I autostuff
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -g -O0 -I$(top_srcdir)
 
 SUBDIRS = hardware input output tests
 

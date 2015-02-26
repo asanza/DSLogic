@@ -166,7 +166,6 @@ SR_API int ds_trigger_set_pos(uint16_t position)
 {
     assert(position <= 100);
     trigger->trigger_pos = position;
-
     return SR_OK;
 }
 

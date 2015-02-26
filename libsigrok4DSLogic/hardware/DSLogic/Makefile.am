@@ -23,7 +23,10 @@ noinst_LTLIBRARIES = libsigrok4DSLogic_hw_dslogic.la
 
 libsigrok4DSLogic_hw_dslogic_la_SOURCES = \
 	command.c \
-	dslogic.c
+	dslogic.c \
+	dslogic.h \
+	command.h \
+	api.c
 
 libsigrok4DSLogic_hw_dslogic_la_CFLAGS = \
 	-I$(top_srcdir)

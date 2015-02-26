@@ -54,6 +54,8 @@
 
 #include <QDebug>
 #include <QMessageBox>
+#include <QFile>
+#include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
 
@@ -161,6 +163,41 @@ void SigSession::save_file(const std::string &name){
                     (unsigned char*)snapshot->get_data(),
                     snapshot->unit_size(),
                     snapshot->get_sample_count());
+}
+
+void SigSession::export_file(const std::string &name){
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _logic_data->get_snapshots();
+    if(snapshots.empty())
+        return;
+    const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
+            snapshots.front();
+    struct sr_output_format** supportedFormats = sr_output_list();
+    sr_output_format* csv_format;
+    while(*supportedFormats++){
+        if(*supportedFormats == NULL)
+            break;
+        if(!strcmp((*supportedFormats)->id, "csv")){
+            csv_format = *supportedFormats;
+            break;
+        }
+    }
+    struct sr_output output;
+    unsigned char *dout;
+    uint64_t osize;
+    output.format = csv_format;
+    output.sdi = _dev_inst->dev_inst();
+    csv_format->init(&output);
+    csv_format->data(&output,(unsigned char*)snapshot->get_data(),
+                     snapshot->get_sample_count()*snapshot->unit_size(),&dout,&osize);
+    QFile file("c://out.txt");
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&file);
+    QFuture<void> future = QtConcurrent::run([](){std::cout << "Hello";});
+    future.waitForFinished();
+    // optional, as QFile destructor will already do it:
+    file.close();
+
 }
 
 void SigSession::set_default_device()

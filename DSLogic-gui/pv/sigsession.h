@@ -112,6 +112,8 @@ public:
 
     void save_file(const std::string &name);
 
+    void export_file(const std::string &name);
+
     void set_default_device();
 
     void release_device(device::DevInst *dev_inst);

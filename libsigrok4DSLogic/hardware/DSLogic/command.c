@@ -19,9 +19,10 @@
 
 #include <libusb.h>
 #include "command.h"
-//#include "libsigrok.h"
+#include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include "dslogic.h"
+#include <string.h>
 
 SR_PRIV int command_get_fw_version(libusb_device_handle *devhdl,
                    struct version_info *vi)
@@ -209,4 +210,48 @@ SR_PRIV int command_get_status(libusb_device_handle *devhdl,
     }
 
     return SR_OK;
+}
+
+/**
+ * Check the USB configuration to determine if this is an DSLogic device.
+ *
+ * @return TRUE if the device's configuration profile match DSLogic
+ *         configuration, FALSE otherwise.
+ */
+SR_PRIV gboolean check_conf_profile(libusb_device *dev)
+{
+    struct libusb_device_descriptor des;
+    struct libusb_device_handle *hdl;
+    gboolean ret;
+    unsigned char strdesc[64];
+
+    hdl = NULL;
+    ret = FALSE;
+    while (!ret) {
+        /* Assume the FW has not been loaded, unless proven wrong. */
+        if (libusb_get_device_descriptor(dev, &des) != 0)
+            break;
+
+        if (libusb_open(dev, &hdl) != 0)
+            break;
+
+        if (libusb_get_string_descriptor_ascii(hdl,
+            des.iManufacturer, strdesc, sizeof(strdesc)) < 0)
+            break;
+        if (strncmp((const char *)strdesc, "DreamSourceLab", 14))
+            break;
+
+        if (libusb_get_string_descriptor_ascii(hdl,
+                des.iProduct, strdesc, sizeof(strdesc)) < 0)
+            break;
+        if (strncmp((const char *)strdesc, "DSLogic", 7))
+            break;
+
+        /* If we made it here, it must be an DSLogic. */
+        ret = TRUE;
+    }
+    if (hdl)
+        libusb_close(hdl);
+
+    return ret;
 }

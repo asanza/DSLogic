@@ -38,7 +38,8 @@ libsigrok4DSLogic_la_SOURCES = \
         trigger.c \
 	version.c \
 	error.c \
-	std.c
+	std.c \
+	trigger.h
 
 libsigrok4DSLogic_la_LIBADD = \
 	$(LIBOBJS) \

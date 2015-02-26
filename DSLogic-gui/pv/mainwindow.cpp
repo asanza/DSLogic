@@ -95,6 +95,9 @@ MainWindow::MainWindow(DeviceManager &device_manager,
     _session(device_manager)
 {
 	setup_ui();
+    QRect position = frameGeometry();
+    position.moveCenter(QDesktopWidget().availableGeometry().center());
+    move(position.topLeft());
 	if (open_file_name) {
 		const QString s(QString::fromUtf8(open_file_name));
 		QMetaObject::invokeMethod(this, "load_file",

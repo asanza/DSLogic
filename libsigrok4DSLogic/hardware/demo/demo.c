@@ -31,6 +31,7 @@
 #endif
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
+#include "trigger.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "demo: "
@@ -255,7 +256,7 @@ static GSList *hw_dev_list(void)
 static GSList *hw_dev_mode_list(void)
 {
     GSList *l = NULL;
-    int i;
+    unsigned int i;
 
     for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
         l = g_slist_append(l, &mode_list[i]);
@@ -353,7 +354,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg)
+                      struct sr_channel_group *cg)
 {
     int i, ret;
 	const char *stropt;
@@ -605,7 +606,7 @@ static void samples_generator(uint16_t *buf, uint64_t size,
 }
 
 /* Callback handling data */
-static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
+static int receive_data(int fd, int revents, struct sr_dev_inst *sdi)
 {
     struct dev_context *devc = sdi->priv;
     struct sr_datafeed_packet packet;
@@ -618,7 +619,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 	int64_t time, elapsed;
     static uint16_t last_sample = 0;
     uint16_t cur_sample;
-    int i;
+    unsigned int i;
 
 	(void)fd;
 	(void)revents;
@@ -697,7 +698,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
                 dso.mqflags = SR_MQFLAG_AC;
-                dso.data = buf;
+                dso.data = (float*)buf;
             }else {
                 packet.type = SR_DF_ANALOG;
                 packet.payload = &analog;
@@ -706,7 +707,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
                 analog.mqflags = SR_MQFLAG_AC;
-                analog.data = buf;
+                analog.data = (float*)buf;
             }
 
             sr_session_send(sdi, &packet);

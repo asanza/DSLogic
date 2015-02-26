@@ -113,23 +113,6 @@ static const uint64_t samplerates[] = {
     SR_MHZ(400),
 };
 
-//static const uint64_t samplecounts[] = {
-//    SR_KB(1),
-//    SR_KB(2),
-//    SR_KB(5),
-//    SR_KB(10),
-//    SR_KB(20),
-//    SR_KB(50),
-//    SR_KB(100),
-//    SR_KB(200),
-//    SR_KB(500),
-//    SR_MB(1),
-//    SR_MB(2),
-//    SR_MB(5),
-//    SR_MB(10),
-//    SR_MB(16),
-//};
-
 static const uint64_t samplecounts[] = {
     SR_KB(1),
     SR_KB(2),
@@ -150,52 +133,7 @@ static const uint64_t samplecounts[] = {
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info;
 static struct sr_dev_driver *di = &DSLogic_driver_info;
-
 extern struct ds_trigger *trigger;
-
-/**
- * Check the USB configuration to determine if this is an DSLogic device.
- *
- * @return TRUE if the device's configuration profile match DSLogic
- *         configuration, FALSE otherwise.
- */
-static gboolean check_conf_profile(libusb_device *dev)
-{
-	struct libusb_device_descriptor des;
-    struct libusb_device_handle *hdl;
-	gboolean ret;
-	unsigned char strdesc[64];
-
-	hdl = NULL;
-	ret = FALSE;
-	while (!ret) {
-		/* Assume the FW has not been loaded, unless proven wrong. */
-		if (libusb_get_device_descriptor(dev, &des) != 0)
-			break;
-
-		if (libusb_open(dev, &hdl) != 0)
-			break;
-
-		if (libusb_get_string_descriptor_ascii(hdl,
-		    des.iManufacturer, strdesc, sizeof(strdesc)) < 0)
-			break;
-        if (strncmp((const char *)strdesc, "DreamSourceLab", 14))
-			break;
-
-		if (libusb_get_string_descriptor_ascii(hdl,
-				des.iProduct, strdesc, sizeof(strdesc)) < 0)
-			break;
-        if (strncmp((const char *)strdesc, "DSLogic", 7))
-			break;
-
-        /* If we made it here, it must be an DSLogic. */
-		ret = TRUE;
-	}
-	if (hdl)
-		libusb_close(hdl);
-
-	return ret;
-}
 
 static int fpga_setting(const struct sr_dev_inst *sdi)
 {

@@ -153,7 +153,9 @@ enum {
 #define SR_PRIV
 #endif
 
-typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
+struct sr_dev_inst;
+
+typedef int (*sr_receive_data_callback_t)(int fd, int revents, struct sr_dev_inst *sdi);
 
 /** Data types used by sr_config_info(). */
 enum {

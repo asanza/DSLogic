@@ -154,9 +154,9 @@ void FileBar::on_actionExport_triggered(){
             QFileInfo f(file_name);
             settings.setValue(FILEPATH,f.absolutePath());
             settings.sync();
-            if(f.suffix() != ".csv")
+            if(f.suffix().compare("csv"))
                 file_name+=tr(".csv");
-            _session.export_file(file_name.toStdString());
+            _session.export_file(file_name.toStdString(), this);
         }
     }
 }
@@ -191,7 +191,7 @@ void FileBar::on_actionSave_triggered()
             QFileInfo f(file_name);
             settings.setValue(FILEPATH,f.absolutePath());
             settings.sync();
-            if(f.suffix() != ".dsl")
+            if(f.suffix().compare("dsl"))
                 file_name+=tr(".dsl");
             _session.save_file(file_name.toStdString());
         }

@@ -42,6 +42,7 @@
 #include <QVector>
 #include <QMap>
 #include <QVariant>
+#include <QtConcurrent/QtConcurrent>
 
 #include <libsigrok4DSLogic/libsigrok.h>
 #include <libusb.h>
@@ -112,7 +113,7 @@ public:
 
     void save_file(const std::string &name);
 
-    void export_file(const std::string &name);
+    void export_file(const std::string &name, QWidget* parent);
 
     void set_default_device();
 
@@ -275,6 +276,8 @@ signals:
     void frame_ended();
 
     void device_setted();
+
+    void progressValueChanged(int percent);
 
 public slots:
     void reload();

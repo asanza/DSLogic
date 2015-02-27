@@ -54,6 +54,7 @@
 
 #include <QDebug>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QFile>
 #include <QtConcurrent/QtConcurrent>
 
@@ -165,7 +166,7 @@ void SigSession::save_file(const std::string &name){
                     snapshot->get_sample_count());
 }
 
-void SigSession::export_file(const std::string &name){
+void SigSession::export_file(const std::string &name, QWidget* parent){
     const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
     if(snapshots.empty())
@@ -183,21 +184,40 @@ void SigSession::export_file(const std::string &name){
         }
     }
     struct sr_output output;
-    unsigned char *dout;
-    uint64_t osize;
     output.format = csv_format;
     output.sdi = _dev_inst->dev_inst();
     csv_format->init(&output);
-    csv_format->data(&output,(unsigned char*)snapshot->get_data(),
-                     snapshot->get_sample_count()*snapshot->unit_size(),&dout,&osize);
-    QFile file("c://out.txt");
+    QFile file(name.c_str());
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
-    QFuture<void> future = QtConcurrent::run([](){std::cout << "Hello";});
-    future.waitForFinished();
-    // optional, as QFile destructor will already do it:
-    file.close();
-
+    QFuture<void> future = QtConcurrent::run([&]{
+        unsigned char* datat = (unsigned char*)snapshot->get_data();
+        int numsamples = snapshot->get_sample_count();
+        unsigned char *data_out;
+        uint64_t output_size;
+        uint64_t usize = 1024;
+        for(int i = 0; i < numsamples; i+=usize){
+            int size = usize;
+            if(numsamples - i < 512)
+                size = snapshot->get_sample_count() - i;
+            csv_format->data(&output,(unsigned char*)&datat[i],size,&data_out,&output_size);
+            out << QString::fromUtf8((const char*)data_out);
+            g_free(data_out);
+            emit  progressValueChanged(i*100/numsamples);
+        }
+        // optional, as QFile destructor will already do it:
+        file.close();
+    });
+    QFutureWatcher<void> watcher;
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),
+                        QString::fromUtf8("Cancel"),0,100,parent,flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    dlg.setCancelButton(NULL);
+    watcher.setFuture(future);
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+    connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
+    dlg.exec();
 }
 
 void SigSession::set_default_device()

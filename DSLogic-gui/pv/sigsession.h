@@ -113,7 +113,7 @@ public:
 
     void save_file(const std::string &name);
 
-    void export_file(const std::string &name, QWidget* parent);
+    void export_file(const std::string &name, QWidget* parent, const std::string &ext);
 
     void set_default_device();
 
@@ -133,6 +133,7 @@ public:
 
     std::vector< boost::shared_ptr<view::GroupSignal> >
         get_group_signals();
+    QList<QString> getSuportedExportFormats();
 
 #ifdef ENABLE_DECODE
     bool add_decoder(srd_decoder *const dec);

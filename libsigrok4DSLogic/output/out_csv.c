@@ -201,9 +201,10 @@ static int data(struct sr_output *o, const uint8_t *data_in,
 	for (i = 0; i <= length_in - ctx->unitsize; i += ctx->unitsize) {
 		memcpy(&sample, data_in + i, ctx->unitsize);
 		for (j = ctx->num_enabled_probes - 1; j >= 0; j--) {
-			g_string_append_printf(outstr, "%d%c",
-				(int)((sample & (1 << j)) >> j),
-				ctx->separator);
+			g_string_append_printf(outstr, "%d",
+				(int)((sample & (1 << j)) >> j));
+			if( j >= 1)
+				g_string_append_printf(outstr,"%c",ctx->separator);
 		}
 		g_string_append_printf(outstr, "\n");
 	}

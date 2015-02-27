@@ -147,16 +147,24 @@ void FileBar::on_actionExport_triggered(){
     }else {
         QSettings settings;
         QString path = settings.value(FILEPATH,QDir::homePath()).toString();
+        QList<QString> supportedFormats = _session.getSuportedExportFormats();
+        QString filter;
+        for(int i = 0; i < supportedFormats.count();i++){
+            filter.append(supportedFormats[i]);
+            if(i < supportedFormats.count() - 1)
+                filter.append(";;");
+        }
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), path,
-                    tr("Coma separated values(*.csv)"));
+                    this, tr("Export Data"), path,filter,&filter);
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             settings.setValue(FILEPATH,f.absolutePath());
             settings.sync();
-            if(f.suffix().compare("csv"))
-                file_name+=tr(".csv");
-            _session.export_file(file_name.toStdString(), this);
+            QStringList list = filter.split('.').last().split(')');
+            QString ext = list.first();
+            if(f.suffix().compare("." + ext))
+                file_name+=tr(".")+ext;
+            _session.export_file(file_name.toStdString(), this, ext.toStdString());
         }
     }
 }

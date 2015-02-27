@@ -166,7 +166,22 @@ void SigSession::save_file(const std::string &name){
                     snapshot->get_sample_count());
 }
 
-void SigSession::export_file(const std::string &name, QWidget* parent){
+QList<QString> SigSession::getSuportedExportFormats(){
+    struct sr_output_format** supportedFormats = sr_output_list();
+    QList<QString> list;
+    while(*supportedFormats++){
+        if(*supportedFormats == NULL)
+            break;
+        QString format((*supportedFormats)->description);
+        format.append(" (*.");
+        format.append((*supportedFormats)->id);
+        format.append(")");
+        list.append(format);
+    }
+    return list;
+}
+
+void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
     const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
     if(snapshots.empty())
@@ -174,19 +189,23 @@ void SigSession::export_file(const std::string &name, QWidget* parent){
     const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
             snapshots.front();
     struct sr_output_format** supportedFormats = sr_output_list();
-    sr_output_format* csv_format;
+    sr_output_format* csv_format = NULL;
     while(*supportedFormats++){
         if(*supportedFormats == NULL)
             break;
-        if(!strcmp((*supportedFormats)->id, "csv")){
+        if(!strcmp((*supportedFormats)->id, ext.c_str())){
             csv_format = *supportedFormats;
             break;
         }
     }
+    if(csv_format == NULL)
+        return;
     struct sr_output output;
     output.format = csv_format;
     output.sdi = _dev_inst->dev_inst();
-    csv_format->init(&output);
+    output.param = NULL;
+    if(!csv_format->init)
+        csv_format->init(&output);
     QFile file(name.c_str());
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
@@ -218,6 +237,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent){
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
     connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
     dlg.exec();
+    future.waitForFinished();
 }
 
 void SigSession::set_default_device()

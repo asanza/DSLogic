@@ -115,7 +115,7 @@ static int init(struct sr_output *o)
 	for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->enabled)
-			g_string_append_printf(ctx->header, "%s, ", probe->name);
+                        g_string_append_printf(ctx->header, "%s, ", probe->name);
 	}
 	g_string_append_printf(ctx->header, "\n");
 

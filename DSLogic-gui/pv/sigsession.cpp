@@ -218,6 +218,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent){
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
     connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
     dlg.exec();
+    future.waitForFinished();
 }
 
 void SigSession::set_default_device()

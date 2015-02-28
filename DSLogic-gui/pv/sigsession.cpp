@@ -188,24 +188,24 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
         return;
     const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
             snapshots.front();
-    struct sr_output_format** supportedFormats = sr_output_list();
-    sr_output_format* csv_format = NULL;
-    while(*supportedFormats++){
-        if(*supportedFormats == NULL)
+    struct sr_output_module** supportedModules = sr_output_list();
+    struct sr_output_module* outModule = NULL;
+    while(*supportedModules++){
+        if(*supportedModules == NULL)
             break;
-        if(!strcmp((*supportedFormats)->id, ext.c_str())){
-            csv_format = *supportedFormats;
+        if(!strcmp((*supportedModules)->id, ext.c_str())){
+            outModule = *supportedModules;
             break;
         }
     }
-    if(csv_format == NULL)
+    if(outModule == NULL)
         return;
     struct sr_output output;
-    output.format = csv_format;
+    output.format = outModule;
     output.sdi = _dev_inst->dev_inst();
     output.param = NULL;
-    if(!csv_format->init)
-        csv_format->init(&output);
+    if(!outModule->init)
+        outModule->init(&output);
     QFile file(name.c_str());
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
@@ -219,7 +219,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
             int size = usize;
             if(numsamples - i < 512)
                 size = snapshot->get_sample_count() - i;
-            csv_format->data(&output,(unsigned char*)&datat[i],size,&data_out,&output_size);
+            outModule->data(&output,(unsigned char*)&datat[i],size,&data_out,&output_size);
             out << QString::fromUtf8((const char*)data_out);
             g_free(data_out);
             emit  progressValueChanged(i*100/numsamples);

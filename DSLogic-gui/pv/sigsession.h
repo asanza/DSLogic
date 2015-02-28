@@ -87,6 +87,7 @@ class SigSession : public QObject
 
 private:
     static const float Oversampling;
+    bool saveFileThreadRunning = false;
 
 public:
 	enum capture_state {
@@ -282,6 +283,9 @@ signals:
 
 public slots:
     void reload();
+
+private slots:
+    void cancelSaveFile();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

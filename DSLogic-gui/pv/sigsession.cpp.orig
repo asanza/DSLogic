@@ -182,10 +182,6 @@ QList<QString> SigSession::getSuportedExportFormats(){
     return list;
 }
 
-void SigSession::cancelSaveFile(){
-    saveFileThreadRunning = false;
-}
-
 void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
     const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
@@ -219,20 +215,20 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
     QFuture<void> future = QtConcurrent::run([&]{
-        saveFileThreadRunning = true;
         unsigned char* datat = (unsigned char*)snapshot->get_data();
-        int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
+        int numsamples = snapshot->get_sample_count();
         GString *data_out;
-        int usize = 1024;
-        int size = usize;
-        struct sr_datafeed_logic lp;
-        struct sr_datafeed_packet p;
-        for(uint64_t i = 0; i < numsamples; i+=usize){
-            if(numsamples - i < usize)
-                size = numsamples - i;
+        uint64_t output_size;
+        uint64_t usize = 512;
+        for(int i = 0; i < numsamples; i+=usize){
+            int size = usize;
+            if(numsamples - i < 512)
+                size = snapshot->get_sample_count() - i;
+            struct sr_datafeed_logic lp;
             lp.data = &datat[i];
             lp.length = size;
             lp.unitsize = snapshot->unit_size();
+            struct sr_datafeed_packet p;
             p.type = SR_DF_LOGIC;
             p.payload = &lp;
             outModule->receive(&output, &p, &data_out);
@@ -241,8 +237,6 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
                 g_string_free(data_out,TRUE);
             }
             emit  progressValueChanged(i*100/numsamples);
-            if(!saveFileThreadRunning)
-                break;
         }
     });
     QFutureWatcher<void> watcher;
@@ -250,17 +244,20 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),
                         QString::fromUtf8("Cancel"),0,100,parent,flags);
     dlg.setWindowModality(Qt::WindowModal);
+    dlg.setCancelButton(NULL);
     watcher.setFuture(future);
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
     connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
-    connect(&dlg,SIGNAL(canceled()),this,SLOT(cancelSaveFile()));
     dlg.exec();
     future.waitForFinished();
+<<<<<<< HEAD
+=======
     // optional, as QFile destructor will already do it:
     file.close();
     outModule->cleanup(&output);
     g_hash_table_destroy(params);
     g_variant_unref(filenameGVariant);
+>>>>>>> multiOutputFormatSupport
 }
 
 void SigSession::set_default_device()

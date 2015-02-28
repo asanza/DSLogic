@@ -167,16 +167,17 @@ void SigSession::save_file(const std::string &name){
 }
 
 QList<QString> SigSession::getSuportedExportFormats(){
-    struct sr_output_format** supportedFormats = sr_output_list();
+    const struct sr_output_module** supportedModules = sr_output_list();
     QList<QString> list;
-    while(*supportedFormats++){
-        if(*supportedFormats == NULL)
+    while(*supportedModules){
+        if(*supportedModules == NULL)
             break;
-        QString format((*supportedFormats)->description);
+        QString format((*supportedModules)->desc);
         format.append(" (*.");
-        format.append((*supportedFormats)->id);
+        format.append((*supportedModules)->id);
         format.append(")");
         list.append(format);
+        *supportedModules++;
     }
     return list;
 }
@@ -188,44 +189,55 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
         return;
     const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
             snapshots.front();
-    struct sr_output_module** supportedModules = sr_output_list();
-    struct sr_output_module* outModule = NULL;
-    while(*supportedModules++){
+    const struct sr_output_module** supportedModules = sr_output_list();
+    const struct sr_output_module* outModule = NULL;
+    while(*supportedModules){
         if(*supportedModules == NULL)
             break;
         if(!strcmp((*supportedModules)->id, ext.c_str())){
             outModule = *supportedModules;
             break;
         }
+        *supportedModules++;
     }
     if(outModule == NULL)
         return;
     struct sr_output output;
-    output.format = outModule;
+    GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
+    GVariant* filenameGVariant = g_variant_new_string(name.c_str());
+    g_hash_table_insert(params, (char*)"filename", filenameGVariant);
+    output.module = (sr_output_module*) outModule;
     output.sdi = _dev_inst->dev_inst();
     output.param = NULL;
-    if(!outModule->init)
-        outModule->init(&output);
+    if(outModule->init)
+        outModule->init(&output, params);
     QFile file(name.c_str());
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
     QFuture<void> future = QtConcurrent::run([&]{
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         int numsamples = snapshot->get_sample_count();
-        unsigned char *data_out;
+        GString *data_out;
         uint64_t output_size;
-        uint64_t usize = 1024;
+        uint64_t usize = 512;
         for(int i = 0; i < numsamples; i+=usize){
             int size = usize;
             if(numsamples - i < 512)
                 size = snapshot->get_sample_count() - i;
-            outModule->data(&output,(unsigned char*)&datat[i],size,&data_out,&output_size);
-            out << QString::fromUtf8((const char*)data_out);
-            g_free(data_out);
+            struct sr_datafeed_logic lp;
+            lp.data = &datat[i];
+            lp.length = size;
+            lp.unitsize = snapshot->unit_size();
+            struct sr_datafeed_packet p;
+            p.type = SR_DF_LOGIC;
+            p.payload = &lp;
+            outModule->receive(&output, &p, &data_out);
+            if(data_out){
+                out << (char*) data_out->str;
+                g_string_free(data_out,TRUE);
+            }
             emit  progressValueChanged(i*100/numsamples);
         }
-        // optional, as QFile destructor will already do it:
-        file.close();
     });
     QFutureWatcher<void> watcher;
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
@@ -238,6 +250,11 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
     dlg.exec();
     future.waitForFinished();
+    // optional, as QFile destructor will already do it:
+    file.close();
+    outModule->cleanup(&output);
+    g_hash_table_destroy(params);
+    g_variant_unref(filenameGVariant);
 }
 
 void SigSession::set_default_device()

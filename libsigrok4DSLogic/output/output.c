@@ -67,17 +67,17 @@ extern SR_PRIV struct sr_output_module output_wav;
 /* @endcond */
 
 static const struct sr_output_module *output_module_list[] = {
+	&output_csv,
+	&output_vcd,
+	&output_gnuplot,
+	&output_srzip,
 	/*&output_ascii,
 	&output_binary,
-	&output_bits,*/
-	&output_csv,
-	/*&output_gnuplot,
+	&output_bits,
 	&output_hex,
 	&output_ols,
-	&output_vcd,
 	&output_chronovu_la8,
 	&output_analog,
-	&output_srzip,
 	&output_wav,*/
 	NULL,
 };

@@ -162,7 +162,7 @@ void FileBar::on_actionExport_triggered(){
             settings.sync();
             QStringList list = filter.split('.').last().split(')');
             QString ext = list.first();
-            if(f.suffix().compare("." + ext))
+            if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
             _session.export_file(file_name.toStdString(), this, ext.toStdString());
         }

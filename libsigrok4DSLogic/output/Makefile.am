@@ -22,11 +22,14 @@ noinst_LTLIBRARIES = libsigrok4DSLogicoutput.la
 
 libsigrok4DSLogicoutput_la_SOURCES = \
         output.c \
-	csv.c
+	csv.c \
+	vcd.c \
+	gnuplot.c \
+	srzip.c
 
 libsigrok4DSLogicoutput_la_CFLAGS = \
 	-I$(top_srcdir)
 
-libsigrok4DSLogicoutput_la_LIBADD = \
-	text/libsigrok4DSLogicoutputtext.la
+#libsigrok4DSLogicoutput_la_LIBADD = \
+#	text/libsigrok4DSLogicoutputtext.la
 

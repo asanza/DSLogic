@@ -228,7 +228,6 @@ AC_CONFIG_FILES([Makefile version.h hardware/Makefile
 		 hardware/DSLogic/Makefile
 		 input/Makefile
 		 output/Makefile
-		 output/text/Makefile
 		 libsigrok4DSLogic.pc
 		 tests/Makefile
 		])

@@ -41,7 +41,8 @@ libsigrok4DSLogic_la_SOURCES = \
 	std.c \
 	trigger.h \
 	libsigrok-internal.h \
-	libsigrok.h
+	libsigrok.h \
+	proto.h
 
 libsigrok4DSLogic_la_LIBADD = \
 	$(LIBOBJS) \

@@ -22,6 +22,8 @@
 #define LIBDSLOGIC_HARDWARE_DSLOGIC_H
 
 #include <glib.h>
+#include <libsigrok.h>
+#include <libsigrok-internal.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "DSLogic Hardware: "
@@ -61,6 +63,8 @@
 
 #define DEFAULT_SAMPLERATE SR_MHZ(100)
 #define DEFAULT_SAMPLELIMIT SR_MB(16)
+
+
 
 struct DSLogic_profile {
     uint16_t vid;
@@ -118,6 +122,7 @@ struct dev_context {
 	gboolean sample_wide;
     gboolean clock_type;
     gboolean clock_edge;
+    gboolean rle_enabled;
     uint16_t op_mode;
     uint16_t th_level;
     uint16_t filter;
@@ -204,5 +209,7 @@ struct DSLogic_setting {
     //uint16_t trig_logic3[NUM_TRIGGER_STAGES];
     uint32_t end_sync;
 };
+
+SR_PRIV void rle_decode(uint16_t *data_rle, unsigned long len_rle, uint16_t *data, unsigned long len);
 
 #endif

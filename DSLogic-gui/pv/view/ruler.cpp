@@ -58,7 +58,7 @@ const QString Ruler::SIPrefixes[9] =
 const QString Ruler::FreqPrefixes[9] =
     {"P", "T", "G", "M", "K", "", "", "", ""};
 const int Ruler::FirstSIPrefixPower = -15;
-const int Ruler::pricision = 2;
+const int Ruler::precision = 2;
 
 const int Ruler::HoverArrowSize = 5;
 
@@ -118,8 +118,8 @@ QString Ruler::format_freq(double period, unsigned precision)
 QString Ruler::format_time(double t, unsigned int prefix,
     unsigned int precision)
 {
-	const double multiplier = pow(10.0,
-		static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
+    const double multiplier = pow(10.0,
+        static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
 
 	QString s;
 	QTextStream ts(&s);

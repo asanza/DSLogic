@@ -44,7 +44,7 @@ private:
 	static const QString SIPrefixes[9];
     static const QString FreqPrefixes[9];
 	static const int FirstSIPrefixPower;
-    static const int pricision;
+    static const int precision;
 
 	static const int HoverArrowSize;
     static const int CursorSelWidth;
@@ -63,8 +63,8 @@ public:
 	Ruler(View &parent);
 
 	static QString format_time(double t, unsigned int prefix,
-        unsigned precision = pricision);
-    static QString format_freq(double period, unsigned precision = pricision);
+        unsigned precision = precision);
+    static QString format_freq(double period, unsigned precision = precision);
     QString format_time(double t);
 
     TimeMarker* get_grabbed_cursor();

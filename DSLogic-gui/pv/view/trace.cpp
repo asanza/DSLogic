@@ -203,8 +203,7 @@ void Trace::set_view(pv::view::View *view)
 
 void Trace::paint_back(QPainter &p, int left, int right)
 {
-    QPen pen(Signal::dsGray);
-    pen.setStyle(Qt::DotLine);
+    QPen pen(QColor(128,128,128,24));
     p.setPen(pen);
     const double sigY = get_y();
     p.drawLine(left, sigY, right, sigY);

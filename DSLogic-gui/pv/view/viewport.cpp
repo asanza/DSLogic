@@ -136,7 +136,7 @@ void Viewport::paintEvent(QPaintEvent *event)
             t->paint_fore(p, 0, width());
     }
 
-    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::Antialiasing);
     if (_view.get_signalHeight() != _curSignalHeight)
             _curSignalHeight = _view.get_signalHeight();
 
@@ -158,7 +158,7 @@ void Viewport::paintSignals(QPainter &p)
         pixmap.fill(Qt::transparent);
         QPainter dbp(&pixmap);
         dbp.initFrom(this);
-        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setRenderHint(QPainter::Antialiasing);
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
         {
             assert(t);

@@ -54,15 +54,10 @@ namespace view {
 
 const int View::LabelMarginWidth = 70;
 const int View::RulerHeight = 50;
-
 const int View::MaxScrollValue = INT_MAX / 2;
-
-//const int View::SignalHeight = 30;s
 const int View::SignalMargin = 3;
 const int View::SignalSnapGridSize = 10;
-
 const QColor View::CursorAreaColour(220, 231, 243);
-
 const QSizeF View::LabelPadding(4, 4);
 
 View::View(SigSession &session, QWidget *parent) :
@@ -78,7 +73,7 @@ View::View(SigSession &session, QWidget *parent) :
     _minscale(1e-15),
 	_offset(0),
     _preOffset(0),
-	_v_offset(0),
+    _v_offset(0),
 	_updating_scroll(false),
     _need_update(false),
 	_show_cursors(false),
@@ -591,7 +586,7 @@ void View::h_scroll_value_changed(int value)
 
 void View::v_scroll_value_changed(int value)
 {
-	_v_offset = value;
+    _v_offset = value;
 	_header->update();
 	_viewport->update();
 }

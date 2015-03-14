@@ -26,7 +26,7 @@ dslDial::~dslDial()
 
 void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
 {
-    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::Antialiasing);
     p.setPen(dialColor);
     p.setBrush(dialColor);
 

@@ -48,6 +48,7 @@ private:
         const QString text, const QString info_text);
     void show_session_error(
         const QString text, const QString info_text);
+    ~FileBar();
 
 signals:
     void load_file(QString);
@@ -70,6 +71,11 @@ private:
     QAction *_action_save;
     QAction *_action_export;
     QAction *_action_capture;
+
+    /* application settings */
+    QSettings settings;
+    /* string for qt settings */
+    QString FILEPATH = QStringLiteral("LastVisitedPath");
 
 };
 

@@ -60,10 +60,6 @@ class SamplingBar : public QToolBar
 {
 	Q_OBJECT
 
-private:
-    static const uint64_t RecordLengths[19];
-    static const uint64_t DefaultRecordLength;
-
 public:
     SamplingBar(SigSession &session, QWidget *parent);
 

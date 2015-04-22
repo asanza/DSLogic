@@ -53,30 +53,6 @@ using std::string;
 namespace pv {
 namespace toolbars {
 
-const uint64_t SamplingBar::RecordLengths[19] = {
-	1000,
-    2000,
-    4000,
-    8000,
-	10000,
-    20000,
-    40000,
-    80000,
-	100000,
-    200000,
-    400000,
-    800000,
-	1000000,
-	2000000,
-    4000000,
-    8000000,
-	10000000,
-    20000000,
-    40000000,
-};
-
-const uint64_t SamplingBar::DefaultRecordLength = 1000000;
-
 SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
     _session(session),

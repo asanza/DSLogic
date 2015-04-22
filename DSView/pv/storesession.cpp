@@ -45,7 +45,7 @@ const size_t StoreSession::BlockSize = 1024 * 1024;
 StoreSession::StoreSession(const std::string &file_name,
     SigSession &session) :
 	_file_name(file_name),
-	_session(session),
+    _session(session),
 	_units_stored(0),
 	_unit_count(0)
 {

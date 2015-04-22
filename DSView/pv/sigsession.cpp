@@ -193,7 +193,7 @@ QList<QString> SigSession::getSuportedExportFormats(){
         format.append((*supportedModules)->id);
         format.append(")");
         list.append(format);
-        *supportedModules++;
+        ++supportedModules;
     }
     return list;
 }
@@ -207,10 +207,10 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
             _logic_data->get_snapshots();
     if(snapshots.empty())
         return;
-    const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
-            snapshots.front();
+    const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot = snapshots.front();
     const struct sr_output_module** supportedModules = sr_output_list();
     const struct sr_output_module* outModule = NULL;
+    const unsigned int block_size = 1024*1024; // save data to disk on chunks of this size
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
@@ -218,7 +218,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
             outModule = *supportedModules;
             break;
         }
-        *supportedModules++;
+        supportedModules++;
     }
     if(outModule == NULL)
         return;
@@ -239,12 +239,11 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
         GString *data_out;
-        int usize = 8192;
-        int size = usize;
         struct sr_datafeed_logic lp;
         struct sr_datafeed_packet p;
-        for(uint64_t i = 0; i < numsamples; i+=usize){
-            if(numsamples - i < usize)
+        unsigned int size = block_size;
+        for(uint64_t i = 0; i < numsamples; i+= block_size){
+            if(numsamples - i < block_size)
                 size = numsamples - i;
             lp.data = &datat[i];
             lp.length = size;

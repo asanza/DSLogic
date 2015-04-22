@@ -292,7 +292,10 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
             return false;
 
         const uint64_t sig_mask = 1ULL << get_index();
-        bool sample = snapshot->get_sample(index) & sig_mask;
+        if(index > snapshot->get_sample_count())
+            return false;
+
+        uint64_t sample = snapshot->get_sample(index) & sig_mask;
         index--;
         if (!snapshot->get_pre_edge(index, sample, 1, get_index()))
             return false;

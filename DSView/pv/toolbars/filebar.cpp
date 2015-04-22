@@ -38,6 +38,8 @@
 namespace pv {
 namespace toolbars {
 
+const QString FileBar::last_visited_path = QStringLiteral("LastVisitedPath");
+
 FileBar::FileBar(SigSession &session, QWidget *parent) :
     QToolBar("File Bar", parent),
     _enable(true),
@@ -94,14 +96,14 @@ FileBar::~FileBar(){
 
 void FileBar::on_actionOpen_triggered()
 {
-    QString path = settings.value(FILEPATH,QDir::homePath()).toString();
+    QString path = settings.value(last_visited_path,QDir::homePath()).toString();
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), path, tr(
             "DSView Sessions (*.dsl);;All Files (*.*)"));
     if (!file_name.isEmpty()){
         QDir dir(file_name);
-        settings.setValue(FILEPATH, dir.absolutePath());
+        settings.setValue(last_visited_path, dir.absolutePath());
         load_file(file_name);
     }
 }
@@ -151,12 +153,12 @@ void FileBar::on_actionExport_triggered(){
             if(i < supportedFormats.count() - 1)
                 filter.append(";;");
         }
-        QString path = settings.value(FILEPATH,QDir::homePath()).toString();
+        QString path = settings.value(last_visited_path,QDir::homePath()).toString();
         QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Export Data"), path,filter,&filter);
         if (!file_name.isEmpty()) {
             QDir dir(file_name);
-            settings.setValue(FILEPATH, dir.absolutePath());
+            settings.setValue(last_visited_path, dir.absolutePath());
             QFileInfo f(file_name);
             QStringList list = filter.split('.').last().split(')');
             QString ext = list.first();
@@ -188,13 +190,13 @@ void FileBar::on_actionSave_triggered()
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }else {
-        QString path = settings.value(FILEPATH,QDir::homePath()).toString();
+        QString path = settings.value(last_visited_path,QDir::homePath()).toString();
         QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Save File"), path,
                     tr("DSView Session (*.dsl)"));
         if (!file_name.isEmpty()) {
             QDir dir(file_name);
-            settings.setValue(FILEPATH,dir.absolutePath());
+            settings.setValue(last_visited_path,dir.absolutePath());
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));

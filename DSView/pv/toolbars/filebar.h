@@ -75,7 +75,7 @@ private:
     /* application settings */
     QSettings settings;
     /* string for qt settings */
-    QString FILEPATH = QStringLiteral("LastVisitedPath");
+    static const QString last_visited_path;
 
 };
 

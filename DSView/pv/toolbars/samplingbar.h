@@ -96,6 +96,7 @@ signals:
     void device_selected();
     void device_updated();
     void update_scale();
+    void sample_count_changed();
 
 private:
     void update_sample_rate_selector();
@@ -140,6 +141,8 @@ private:
     QIcon _icon_stop;
     QIcon _icon_start;
     QIcon _icon_instant;
+    QIcon _icon_start_dis;
+    QIcon _icon_instant_dis;
 	QToolButton _run_stop_button;
     QToolButton _instant_button;
 

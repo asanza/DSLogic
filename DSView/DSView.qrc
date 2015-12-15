@@ -24,8 +24,8 @@
         <file>icons/start.png</file>
         <file>icons/dsl_logo.png</file>
         <file>icons/logo.png</file>
-        <file>icons/decoder-hidden.png</file>
-        <file>icons/decoder-shown.png</file>
+        <file>icons/hidden.png</file>
+        <file>icons/shown.png</file>
         <file>icons/instant.png</file>
         <file>icons/trigger_dis.png</file>
         <file>icons/file_dis.png</file>
@@ -36,5 +36,25 @@
         <file>icons/gear.png</file>
         <file>icons/wiki.png</file>
         <file>icons/wait.gif</file>
+        <file>icons/file_cn.png</file>
+        <file>icons/file_dis_cn.png</file>
+        <file>icons/instant_cn.png</file>
+        <file>icons/measure_cn.png</file>
+        <file>icons/measure_dis_cn.png</file>
+        <file>icons/params_cn.png</file>
+        <file>icons/params_dis_cn.png</file>
+        <file>icons/protocol_dis_cn.png</file>
+        <file>icons/search-bar_cn.png</file>
+        <file>icons/search-bar_dis_cn.png</file>
+        <file>icons/start_cn.png</file>
+        <file>icons/stop_cn.png</file>
+        <file>icons/trigger_cn.png</file>
+        <file>icons/trigger_dis_cn.png</file>
+        <file>icons/protocol_cn.png</file>
+        <file>icons/instant_dis.png</file>
+        <file>icons/instant_dis_cn.png</file>
+        <file>icons/start_dis.png</file>
+        <file>icons/start_dis_cn.png</file>
+        <file>icons/settings.png</file>
     </qresource>
 </RCC>

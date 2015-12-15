@@ -117,10 +117,12 @@ const QColor DecodeTrace::OutlineColours[16] = {
 DecodeTrace::DecodeTrace(pv::SigSession &session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
 	Trace(QString::fromUtf8(
-        decoder_stack->stack().front()->decoder()->name), Trace::DS_DECODER),
+        decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER),
 	_session(session),
 	_decoder_stack(decoder_stack),
-    _show_hide_mapper(this)
+    _show_hide_mapper(this),
+    _popup_form(NULL),
+    _popup()
 {
 	assert(_decoder_stack);
 
@@ -132,6 +134,18 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
         this, SLOT(on_decode_done()));
 	connect(&_show_hide_mapper, SIGNAL(mapped(int)),
 		this, SLOT(on_show_hide_decoder(int)));
+}
+
+DecodeTrace::~DecodeTrace()
+{
+    if (_popup_form)
+        delete _popup_form;
+    if (_popup)
+        delete _popup;
+    _cur_row_headings.clear();
+    _decoder_forms.clear();
+    _probe_selectors.clear();
+    _bindings.clear();
 }
 
 bool DecodeTrace::enabled() const
@@ -276,7 +290,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 		const QRect r(left + ArrowSize * 2, y - row_height / 2,
 			right - left, row_height);
 		const QString h(_cur_row_headings[i]);
-		const int f = Qt::AlignLeft | Qt::AlignVCenter |
+        const int f = Qt::AlignLeft | Qt::AlignBottom |
 			Qt::TextDontClip;
 
 		// Draw the outline
@@ -297,21 +311,11 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 
 bool DecodeTrace::create_popup()
 {
-    // Clear the layout
-
-    // Transfer the layout and the child widgets to a temporary widget
-    // which then goes out of scope destroying the layout and all the child
-    // widgets.
-    //if (_popup_form)
-    //    QWidget().setLayout(_popup_form);
-
     int ret = false;
-    QDialog popup;
-    QFormLayout popup_form;
-    popup.setLayout(&popup_form);
-    populate_popup_form(&popup, &popup_form);
+    _popup = new QDialog();
+    create_popup_form();
 
-    if (QDialog::Accepted == popup.exec())
+    if (QDialog::Accepted == _popup->exec())
     {
         BOOST_FOREACH(shared_ptr<data::decode::Decoder> dec,
             _decoder_stack->stack())
@@ -321,12 +325,28 @@ bool DecodeTrace::create_popup()
                 ret = true;
             }
         }
-        return ret;
     }
-    else
-        return false;
+
+    _popup = NULL;
+    _popup_form = NULL;
+
+    return ret;
 }
 
+void DecodeTrace::create_popup_form()
+{
+    // Clear the layout
+
+    // Transfer the layout and the child widgets to a temporary widget
+    // which then goes out of scope destroying the layout and all the child
+    // widgets.
+    if (_popup_form)
+        QWidget().setLayout(_popup_form);
+
+    _popup_form = new QFormLayout(_popup);
+    _popup->setLayout(_popup_form);
+    populate_popup_form(_popup, _popup_form);
+}
 
 void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 {
@@ -368,8 +388,8 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 		new pv::widgets::DecoderMenu(parent);
 	connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder*)),
 		this, SLOT(on_stack_decoder(srd_decoder*)));
-    connect(decoder_menu, SIGNAL(selected()),
-            parent, SLOT(accept()));
+    //connect(decoder_menu, SIGNAL(selected()),
+    //        parent, SLOT(accept()));
 
 	QPushButton *const stack_button =
 		new QPushButton(tr("Stack Decoder"), parent);
@@ -547,7 +567,8 @@ bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
 	shared_ptr<Logic> data;
 	shared_ptr<LogicSignal> logic_signal;
 
-    const int64_t sample_count = _session.get_device()->get_sample_limit();
+    //const int64_t sample_count = _session.get_device()->get_sample_limit();
+    const int64_t sample_count = _decoder_stack->sample_count();
 	if (sample_count == 0)
         return true;
 
@@ -689,8 +710,10 @@ QComboBox* DecodeTrace::create_probe_selector(
 		{
 			selector->addItem(s->get_name(),
 				qVariantFromValue((void*)s.get()));
-			if ((*probe_iter).second == s)
-				selector->setCurrentIndex(i + 1);
+            if (probe_iter != dec->channels().end()) {
+                if ((*probe_iter).second->get_index() == s->get_index())
+                    selector->setCurrentIndex(i + 1);
+            }
 		}
 	}
 
@@ -768,7 +791,7 @@ void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
 		new data::decode::Decoder(decoder)));
     //_decoder_stack->begin_decode();
 
-    create_popup();
+    create_popup_form();
 }
 
 void DecodeTrace::on_show_hide_decoder(int index)
@@ -800,13 +823,12 @@ int DecodeTrace::rows_size()
     return _decoder_stack->cur_rows_size();
 }
 
-void DecodeTrace::paint_type_options(QPainter &p, int right, bool hover, int action)
+void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
-    (void)hover;
-    (void)action;
+    (void)pt;
 
     int y = get_y();
-    const QRectF group_index_rect = get_rect("groupIndex", y, right);
+    const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
     p.setPen(Qt::transparent);
@@ -826,6 +848,19 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, bool hover, int act
     }
     p.setPen(Qt::white);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
+}
+
+QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
+{
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+
+    if (type == CHNLREG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + Margin,
+            y - SquareWidth / 2,
+            SquareWidth * SquareNum, SquareWidth);
+    else
+        return QRectF(0, 0, 0, 0);
 }
 
 } // namespace view

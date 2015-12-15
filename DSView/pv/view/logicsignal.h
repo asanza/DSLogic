@@ -53,8 +53,21 @@ private:
     static const int StateHeight;
     static const int StateRound;
 
+    enum LogicSetRegions{
+        NONTRIG = 0,
+        POSTRIG,
+        HIGTRIG,
+        NEGTRIG,
+        LOWTRIG,
+        EDGTRIG,
+    };
+
 public:
     LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+                boost::shared_ptr<pv::data::Logic> data,
+                const sr_channel * const probe);
+
+    LogicSignal(boost::shared_ptr<view::LogicSignal> s,
                 boost::shared_ptr<pv::data::Logic> data,
                 const sr_channel * const probe);
 
@@ -66,6 +79,13 @@ public:
 
     boost::shared_ptr<pv::data::Logic> logic_data() const;
 
+    /**
+     *
+     */
+    LogicSetRegions get_trig() const;
+    void set_trig(int trig);
+    void commit_trig();
+
 	/**
 	 * Paints the signal with a QPainter
 	 * @param p the QPainter to paint into.
@@ -76,8 +96,16 @@ public:
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
+    bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
+
+    bool edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const;
+
+    bool mouse_press(int right, const QPoint pt);
+
+    QRectF get_rect(LogicSetRegions type, int y, int right);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
 
@@ -89,6 +117,7 @@ private:
 private:
 	boost::shared_ptr<pv::data::Logic> _data;
     std::vector< std::pair<uint64_t, bool> > _cur_edges;
+    LogicSetRegions _trig;
 };
 
 } // namespace view

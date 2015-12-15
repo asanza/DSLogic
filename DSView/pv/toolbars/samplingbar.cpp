@@ -88,9 +88,19 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _sample_rate(this),
     _updating_sample_rate(false),
     _updating_sample_count(false),
+    #ifdef LANGUAGE_ZH_CN
+    _icon_stop(":/icons/stop_cn.png"),
+    _icon_start(":/icons/start_cn.png"),
+    _icon_instant(":/icons/instant_cn.png"),
+    _icon_start_dis(":/icons/start_dis_cn.png"),
+    _icon_instant_dis(":/icons/instant_dis_cn.png"),
+    #else
     _icon_stop(":/icons/stop.png"),
     _icon_start(":/icons/start.png"),
     _icon_instant(":/icons/instant.png"),
+    _icon_start_dis(":/icons/start_dis.png"),
+    _icon_instant_dis(":/icons/instant_dis.png"),
+    #endif
     _run_stop_button(this),
     _instant_button(this),
     _instant(false)
@@ -106,8 +116,13 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     connect(&_instant_button, SIGNAL(clicked()),
         this, SLOT(on_instant_stop()));
 
+#ifdef LANGUAGE_ZH_CN
+    _configure_button.setIcon(QIcon::fromTheme("configure",
+        QIcon(":/icons/params_cn.png")));
+#else
     _configure_button.setIcon(QIcon::fromTheme("configure",
         QIcon(":/icons/params.png")));
+#endif
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
@@ -158,7 +173,7 @@ void SamplingBar::set_device_list(
 
     BOOST_FOREACH (shared_ptr<pv::device::DevInst> dev_inst, devices) {
         assert(dev_inst);
-        const string title = dev_inst->format_device_title();
+        const QString title = dev_inst->format_device_title();
         const void *id = dev_inst->get_id();
         assert(id);
 
@@ -166,7 +181,7 @@ void SamplingBar::set_device_list(
             selected_index = _device_selector.count();
 
         _device_selector_map[id] = dev_inst;
-        _device_selector.addItem(title.c_str(),
+        _device_selector.addItem(title,
             qVariantFromValue((void*)id));
     }
 
@@ -207,8 +222,12 @@ void SamplingBar::on_configure()
 
     pv::dialogs::DeviceOptions dlg(this, dev_inst);
     ret = dlg.exec();
-    if (ret == QDialog::Accepted)
+    if (ret == QDialog::Accepted) {
         device_updated();
+        update_sample_count_selector();
+        update_sample_rate_selector();
+        commit_sample_rate();
+    }
 
     GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
     if (gvar != NULL) {
@@ -274,20 +293,35 @@ void SamplingBar::set_record_length(uint64_t length)
 
 void SamplingBar::update_record_length()
 {
-    update_sample_count_selector_value();
+    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
+
+    update_sample_count_selector();
+
+    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
 }
 
 void SamplingBar::update_sample_rate()
 {
-    update_sample_rate_selector_value();
+    disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplerate_sel(int)));
+
+    update_sample_rate_selector();
+
+    connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplerate_sel(int)));
 }
 
 void SamplingBar::set_sampling(bool sampling)
 {
-    if (_instant)
+    if (_instant) {
         _instant_button.setIcon(sampling ? _icon_stop : _icon_instant);
-    else
+        _run_stop_button.setIcon(sampling ? _icon_start_dis : _icon_start);
+    } else {
         _run_stop_button.setIcon(sampling ? _icon_stop : _icon_start);
+        _instant_button.setIcon(sampling ? _icon_instant_dis : _icon_instant);
+    }
 
     if (!sampling) {
         g_usleep(100000);
@@ -313,8 +347,13 @@ void SamplingBar::set_sampling(bool sampling)
     }
 
     _configure_button.setEnabled(!sampling);
+#ifdef LANGUAGE_ZH_CN
+    _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis_cn.png") :
+                                  QIcon(":/icons/params_cn.png"));
+#else
     _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis.png") :
                                   QIcon(":/icons/params.png"));
+#endif
 }
 
 void SamplingBar::set_sample_rate(uint64_t sample_rate)
@@ -392,9 +431,9 @@ void SamplingBar::update_sample_rate_selector()
     _updating_sample_rate = false;
 	g_variant_unref(gvar_dict);
 
+    update_sample_rate_selector_value();
     connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
-    update_sample_rate_selector_value();
 }
 
 void SamplingBar::update_sample_rate_selector_value()
@@ -415,7 +454,7 @@ void SamplingBar::update_sample_rate_selector_value()
             break;
         }
     }
-
+    update_scale();
     _updating_sample_rate = false;
 }
 
@@ -455,12 +494,8 @@ void SamplingBar::commit_sample_rate()
 void SamplingBar::on_samplecount_sel(int index)
 {
     uint64_t sample_count = 0;
-    uint64_t max_sample_count = 0;
-    uint64_t last_sample_count = 0;
-    bool stream_mode = false;
-    bool buffer2stream = false;
-    bool stream2buffer = false;
 
+    qDebug() << "index: " << index;
     if (index >= 0)
         sample_count = _sample_count.itemData(
             index).value<uint64_t>();
@@ -469,58 +504,13 @@ void SamplingBar::on_samplecount_sel(int index)
     assert(_devInst);
 
     if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
-        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
-        if (gvar != NULL) {
-            last_sample_count = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-        if (gvar != NULL) {
-            max_sample_count = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-        if (gvar != NULL) {
-            stream_mode = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
-
-        if (((!stream_mode || (last_sample_count >= SR_GB(1))) && sample_count > max_sample_count) ||
-            (sample_count >= SR_GB(1) && _devInst->get_sample_rate() <= SR_MHZ(10))) {
-            stream_mode = sample_count > max_sample_count;
-            buffer2stream = true;
-        } else if (stream_mode && sample_count <= max_sample_count) {
-            stream_mode = sample_count > max_sample_count;
-            stream2buffer = true;
-        }
 
         // Set the sample count
         _devInst->set_config(NULL, NULL,
                              SR_CONF_LIMIT_SAMPLES,
                              g_variant_new_uint64(sample_count));
 
-
-
-        if (buffer2stream) {
-            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
-            stream.setFixedSize(300, 150);
-            stream.exec();
-            update_sample_rate_selector_value();
-            update_sample_count_selector_value();
-            _devInst->set_config(NULL, NULL,
-                                 SR_CONF_STREAM,
-                                 g_variant_new_boolean(true));
-        } else if (stream2buffer) {
-            QMessageBox msg(this);
-            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
-            stream.setFixedSize(300, 100);
-            stream.exec();
-            _devInst->set_config(NULL, NULL,
-                                 SR_CONF_STREAM,
-                                 g_variant_new_boolean(false));
-        }
-
-        device_updated();
+        sample_count_changed();
         update_scale();
     }
 }
@@ -528,25 +518,23 @@ void SamplingBar::on_samplecount_sel(int index)
 void SamplingBar::on_samplerate_sel(int index)
 {
     uint64_t sample_rate = 0;
-    //uint64_t last_sample_rate = 0;
 
     if (index >= 0)
         sample_rate = _sample_rate.itemData(
             index).value<uint64_t>();
 
-    const sr_dev_inst* _sdi = get_selected_device()->dev_inst();
-    assert(_sdi);
+    boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
+    assert(_devInst);
 
     // Get last samplerate
     //last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (strcmp(_sdi->driver->name, "DSLogic") == 0 && _sdi->mode != DSO) {
+    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
-            update_sample_count_selector_value();
-            device_updated();
+
             update_scale();
     }
 }
@@ -556,6 +544,8 @@ void SamplingBar::update_sample_count_selector()
     GVariant *gvar_dict, *gvar_list;
     const uint64_t *elements = NULL;
     gsize num_elements;
+    bool stream_mode = false;
+    uint64_t max_sample_count = 0;
 
     if (_updating_sample_count)
         return;
@@ -578,6 +568,17 @@ void SamplingBar::update_sample_count_selector()
         return;
     }
 
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
+    if (gvar != NULL) {
+        stream_mode = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+    }
+    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_RLE_SAMPLELIMITS);
+    if (gvar != NULL) {
+        max_sample_count = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    }
+
     if ((gvar_list = g_variant_lookup_value(gvar_dict,
             "samplecounts", G_VARIANT_TYPE("at"))))
     {
@@ -588,8 +589,12 @@ void SamplingBar::update_sample_count_selector()
         for (unsigned int i = 0; i < num_elements; i++)
         {
             char *const s = sr_samplecount_string(elements[i]);
-            _sample_count.addItem(QString(s),
-                qVariantFromValue(elements[i]));
+            if (!stream_mode && (elements[i] > max_sample_count))
+                _sample_count.addItem(QString(s)+"(RLE)",
+                    qVariantFromValue(elements[i]));
+            else
+                _sample_count.addItem(QString(s),
+                    qVariantFromValue(elements[i]));
             g_free(s);
         }
 
@@ -600,9 +605,9 @@ void SamplingBar::update_sample_count_selector()
     _updating_sample_count = false;
     g_variant_unref(gvar_dict);
 
+    update_sample_count_selector_value();
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
-    update_sample_count_selector_value();
 }
 
 void SamplingBar::update_sample_count_selector_value()
@@ -621,6 +626,8 @@ void SamplingBar::update_sample_count_selector_value()
             _sample_count.setCurrentIndex(i);
 
     _updating_sample_count = false;
+    sample_count_changed();
+    update_scale();
 }
 
 void SamplingBar::commit_sample_count()
@@ -667,19 +674,21 @@ void SamplingBar::on_run_stop()
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
         return;
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-    if (gvar != NULL) {
-        bool zero = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (zero) {
-            QMessageBox msg(this);
-            msg.setText("Zero Adjustment");
-            msg.setInformativeText("Please adjust zero skew and save the result!");
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
-            msg.exec();
-            zero_adj();
-            return;
+    if (dev_inst->dev_inst()->mode == DSO) {
+        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        if (gvar != NULL) {
+            bool zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (zero) {
+                QMessageBox msg(this);
+                msg.setText(tr("Zero Adjustment"));
+                msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
+                msg.setStandardButtons(QMessageBox::Ok);
+                msg.setIcon(QMessageBox::Warning);
+                msg.exec();
+                zero_adj();
+                return;
+            }
         }
     }
     run_stop();
@@ -695,22 +704,24 @@ void SamplingBar::on_instant_stop()
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
         return;
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-    if (gvar != NULL) {
-        bool zero = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (zero) {
-            QMessageBox msg(this);
-            msg.setText("Zero Adjustment");
-            if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
-                msg.setInformativeText("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!");
-            else
-                msg.setInformativeText("Please adjust zero skew and save the result!");
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
-            msg.exec();
-            zero_adj();
-            return;
+    if (dev_inst->dev_inst()->mode == DSO) {
+        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        if (gvar != NULL) {
+            bool zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (zero) {
+                QMessageBox msg(this);
+                msg.setText(tr("Zero Adjustment"));
+                if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
+                    msg.setInformativeText(tr("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!"));
+                else
+                    msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
+                msg.setStandardButtons(QMessageBox::Ok);
+                msg.setIcon(QMessageBox::Warning);
+                msg.exec();
+                zero_adj();
+                return;
+            }
         }
     }
     instant_stop();

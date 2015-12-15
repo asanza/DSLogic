@@ -35,6 +35,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include <QObject>
 #include <QString>
@@ -44,6 +45,7 @@
 #include <QVariant>
 #include <QTimer>
 #include <QtConcurrent/QtConcurrent>
+#include <QJsonObject>
 
 #include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
@@ -89,6 +91,7 @@ class SigSession : public QObject
 private:
     static constexpr float Oversampling = 2.0f;
     static const int ViewTime = 800;
+    static const int RefreshTime = 500;
 	bool saveFileThreadRunning = false;
 
 public:
@@ -111,15 +114,13 @@ public:
     void set_device(boost::shared_ptr<device::DevInst> dev_inst)
         throw(QString);
 
-    void set_file(const std::string &name)
+    void set_file(QString name)
         throw(QString);
 
-    void save_file(const std::string &name);
+    void save_file(const QString name, int type);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
-    void export_file(const std::string &name, QWidget* parent, const std::string &ext);
-
-    void set_default_device();
+    void export_file(const QString name, QWidget* parent, const QString ext);
 
     void release_device(device::DevInst *dev_inst);
 
@@ -168,11 +169,11 @@ public:
 	void register_hotplug_callback();
     void deregister_hotplug_callback();
 
-    void set_adv_trigger(bool adv_trigger);
-
     uint16_t get_ch_num(int type);
     
     bool get_instant();
+
+    bool get_data_lock();
 
 private:
 	void set_capture_state(capture_state state);
@@ -246,16 +247,16 @@ private:
     boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
     int _group_cnt;
 
-	std::auto_ptr<boost::thread> _sampling_thread;
+	std::unique_ptr<boost::thread> _sampling_thread;
 
 	libusb_hotplug_callback_handle _hotplug_handle;
-    std::auto_ptr<boost::thread> _hotplug;
+    std::unique_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
 
-    bool _adv_trigger;
-
     QTimer _view_timer;
+    QTimer _refresh_timer;
+    bool _data_lock;
 
 signals:
 	void capture_state_changed(int state);
@@ -292,10 +293,11 @@ signals:
 
 public slots:
     void reload();
-    void refresh();
+    void refresh(int holdtime);
 
 private slots:
     void cancelSaveFile();
+    void data_unlock();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

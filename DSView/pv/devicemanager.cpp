@@ -102,12 +102,13 @@ std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
     //release_driver(driver);
 
     // Check If DSL hardware driver
-    if (strcmp(driver->name, "demo") != 0) {
+    if (strncmp(driver->name, "virtual", 7)) {
         QDir dir(QCoreApplication::applicationDirPath());
         if (!dir.cd("res"))
             return driver_devices;
-        std::string str = dir.absolutePath().toStdString() + "/";
-        strcpy(config_path, str.c_str());
+        QString str = dir.absolutePath() + "/";
+        QString str_utf8 = QString::fromLocal8Bit(str.toLocal8Bit());
+        strcpy(config_path, str_utf8.toUtf8().data());
     }
 
 	// Do the scan

@@ -47,7 +47,7 @@ QWidget* String::get_widget(QWidget *parent, bool auto_commit)
 
 	_line_edit = new QLineEdit(parent);
 	_line_edit->setText(QString::fromUtf8(
-		g_variant_get_string(value, NULL)));
+        g_variant_get_string(value, NULL)));
 	g_variant_unref(value);
 
 	if (auto_commit)
@@ -64,8 +64,8 @@ void String::commit()
 	if (!_line_edit)
 		return;
 
-	QByteArray ba = _line_edit->text().toLocal8Bit();
-	_setter(g_variant_new_string(ba.data()));
+    QByteArray ba = _line_edit->text().toUtf8();
+    _setter(g_variant_new_string(ba.data()));
 }
 
 void String::on_text_edited(const QString&)

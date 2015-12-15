@@ -40,6 +40,7 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
 
 #include <vector>
 
@@ -55,7 +56,7 @@ namespace view {
 
 namespace dock {
 
-class MeasureDock : public QWidget
+class MeasureDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -64,7 +65,6 @@ public:
     ~MeasureDock();
 
     void paintEvent(QPaintEvent *);
-
 signals:
 
 private slots:
@@ -74,18 +74,20 @@ private slots:
 public slots:
     void cursor_update();
     void cursor_moved();
-    void mouse_moved();
+    void mouse_measure();
 
 private:
     SigSession &_session;
     view::View &_view;
 
+    QWidget *_widget;
     QGridLayout *_mouse_layout;
     QGroupBox *_mouse_groupBox;
     QCheckBox *_fen_checkBox;
     QLabel *_width_label;
     QLabel *_period_label;
     QLabel *_freq_label;
+    QLabel *_duty_label;
 
     QGridLayout *_cursor_layout;
     QGroupBox *_cursor_groupBox;

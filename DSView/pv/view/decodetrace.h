@@ -71,6 +71,11 @@ private:
 		const srd_channel *_pdch;
 	};
 
+    enum DecodeSetRegions{
+        NONEREG = -1,
+        CHNLREG,
+    };
+
 private:
 	static const QColor DecodeColours[4];
 	static const QColor ErrorBgColour;
@@ -89,6 +94,7 @@ public:
 	DecodeTrace(pv::SigSession &session,
 		boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
 		int index);
+    ~DecodeTrace();
 
 	bool enabled() const;
 
@@ -124,10 +130,14 @@ public:
 
     int rows_size();
 
+    QRectF get_rect(DecodeSetRegions type, int y, int right);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
+    void create_popup_form();
+
 	void populate_popup_form(QWidget *parent, QFormLayout *form);
 
 	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
@@ -196,6 +206,8 @@ private:
 	std::vector<QString> _cur_row_headings;
 
     QSignalMapper  _show_hide_mapper;
+    QFormLayout *_popup_form;
+    QDialog *_popup;
 };
 
 } // namespace view

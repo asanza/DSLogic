@@ -40,8 +40,6 @@
 
 #include "config.h"
 
-char decoders_path[256];
-
 void usage()
 {
 	fprintf(stdout,
@@ -63,10 +61,21 @@ int main(int argc, char *argv[])
 
 	QApplication a(argc, argv);
 
-	// Set some application metadata
-    	QApplication::setApplicationVersion(DS_VERSION_STRING);
-        QApplication::setApplicationName("DSView(Beta)");
-    	QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
+    // Language
+#ifdef LANGUAGE_ZH_CN
+    QTranslator qtTrans;
+    qtTrans.load(":/qt_zh_CN");
+    a.installTranslator(&qtTrans);
+
+    QTranslator DSViewTrans;
+    DSViewTrans.load(":/DSView_zh");
+    a.installTranslator(&DSViewTrans);
+#endif
+
+    // Set some application metadata
+    QApplication::setApplicationVersion(DS_VERSION_STRING);
+    QApplication::setApplicationName("DSView(Beta)");
+    QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments
 	while (1) {
@@ -122,11 +131,6 @@ int main(int argc, char *argv[])
 	do {
 
 #ifdef ENABLE_DECODE
-        QDir dir(QCoreApplication::applicationDirPath());
-        assert(dir.cd("decoders"));
-        std::string str = dir.absolutePath().toStdString() + "/";
-        strcpy(decoders_path, str.c_str());
-
 		// Initialise libsigrokdecode
 		if (srd_init(NULL) != SRD_OK) {
 			qDebug() << "ERROR: libsigrokdecode init failed.";

@@ -120,6 +120,8 @@ public:
 
     void options_changed(bool changed);
 
+    uint64_t sample_count() const;
+
 private:
     boost::optional<uint64_t> wait_for_data() const;
 
@@ -171,7 +173,7 @@ private:
 
 	QString _error_message;
 
-    std::auto_ptr<boost::thread> _decode_thread;
+    std::unique_ptr<boost::thread> _decode_thread;
     decode_state _decode_state;
 
     bool _options_changed;

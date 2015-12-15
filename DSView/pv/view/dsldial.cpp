@@ -5,12 +5,12 @@
 namespace pv {
 namespace view {
 
-dslDial::dslDial(const quint64 div, const quint64 step,
-                 const QVector<quint64> value, const QVector<QString> unit)
+dslDial::dslDial(const uint64_t div, const uint64_t step,
+                 const QVector<uint64_t> value, const QVector<QString> unit)
 {
     assert(div > 0);
     assert(step > 0);
-    assert((quint64)value.count() == div);
+    assert((uint64_t)value.count() == div);
     assert(unit.count() > 0);
 
     _div = div;
@@ -18,13 +18,14 @@ dslDial::dslDial(const quint64 div, const quint64 step,
     _value = value;
     _unit = unit;
     _sel = 0;
+    _factor = 1;
 }
 
 dslDial::~dslDial()
 {
 }
 
-void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
+void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, bool inc)
 {
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(dialColor);
@@ -39,11 +40,11 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
     p.save();
     p.translate(dialRect.center());
     p.rotate(45);
-    for (quint64 i = 0; i < _div; i++) {
+    for (uint64_t i = 0; i < _div; i++) {
         // draw major ticks
         p.drawLine(0, dialRect.width()/2+3, 0, dialRect.width()/2+8);
         // draw minor ticks
-        for (quint64 j = 0; (j < 5) && (i < _div - 1); j++) {
+        for (uint64_t j = 0; (j < 5) && (i < _div - 1); j++) {
             p.drawLine(0, dialRect.width()/2+3, 0, dialRect.width()/2+5);
             p.rotate(54.0/(_div-1));
         }
@@ -55,26 +56,40 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
     p.drawLine(-3, 0, 0, dialRect.width()/2-3);
     p.restore();
     // draw value
-    quint64 displayValue = _value[_sel];
-    quint64 displayIndex = 0;
+    uint64_t displayValue = _value[_sel]*_factor;
+    uint64_t displayIndex = 0;
     while(displayValue / _step >= 1) {
         displayValue = displayValue / _step;
         displayIndex++;
     }
     QString pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
     QFontMetrics fm(p.font());
-    p.drawText(QRectF(dialRect.left(), dialRect.bottom()-dialRect.width()*0.3+fm.height()*0.5, dialRect.width(), fm.height()), Qt::AlignCenter, pText);
+    const QRectF valueRect = QRectF(dialRect.left(), dialRect.bottom()-dialRect.width()*0.3+fm.height()*0.5, dialRect.width(), fm.height());
+    p.drawText(valueRect, Qt::AlignCenter, pText);
 
+    // draw +/-
+    if (hover) {
+        const int arcInc = 15;
+        const QRectF hoverRect = QRectF(dialRect.left()-arcInc, dialRect.top()-arcInc, dialRect.width()+arcInc*2, dialRect.height()+arcInc*2);
+        const double arcSpan = hoverRect.width()/(2*sqrt(2));
+        p.drawArc(hoverRect, 135 * 16, -90 * 16);
+        if (inc)
+            p.drawLine(hoverRect.center().x()+arcSpan, hoverRect.center().y()-arcSpan,
+                       hoverRect.center().x()+arcSpan-4, hoverRect.center().y()-arcSpan-10);
+        else
+            p.drawLine(hoverRect.center().x()-arcSpan, hoverRect.center().y()-arcSpan,
+                       hoverRect.center().x()-arcSpan+4, hoverRect.center().y()-arcSpan-10);
+    }
 }
 
-void dslDial::set_sel(quint64 sel)
+void dslDial::set_sel(uint64_t sel)
 {
     assert(sel < _div);
 
     _sel = sel;
 }
 
-quint64 dslDial::get_sel()
+uint64_t dslDial::get_sel()
 {
     return _sel;
 }
@@ -95,15 +110,27 @@ bool dslDial::isMax()
         return false;
 }
 
-quint64 dslDial::get_value()
+uint64_t dslDial::get_value()
 {
     return _value[_sel];
 }
 
-bool dslDial::set_value(quint64 value)
+bool dslDial::set_value(uint64_t value)
 {
     assert(_value.contains(value));
     _sel = _value.indexOf(value, 0);
+}
+
+void dslDial::set_factor(uint64_t factor)
+{
+    if (_factor != factor) {
+        _factor = factor;
+    }
+}
+
+uint64_t dslDial::get_factor()
+{
+    return _factor;
 }
 
 } // namespace view

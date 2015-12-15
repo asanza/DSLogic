@@ -170,7 +170,7 @@ double DevInst::get_sample_time()
     if (sample_rate == 0)
         sample_time = 0;
     else
-        sample_time = sample_limit * 1.0f / sample_rate;
+        sample_time = sample_limit * 1.0 / sample_rate;
 
     return sample_time;
 }
@@ -180,7 +180,7 @@ GSList* DevInst::get_dev_mode_list()
     assert(_owner);
     sr_dev_inst *const sdi = dev_inst();
     assert(sdi);
-    return sr_dev_mode_list(sdi->driver);
+    return sr_dev_mode_list(sdi);
 }
 
 bool DevInst::is_trigger_enabled() const

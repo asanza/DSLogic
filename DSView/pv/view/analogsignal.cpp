@@ -54,7 +54,7 @@ const float AnalogSignal::EnvelopeThreshold = 256.0f;
 AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                            boost::shared_ptr<data::Analog> data,
                            const sr_channel * const probe) :
-    Signal(dev_inst, probe, DS_ANALOG),
+    Signal(dev_inst, probe, SR_CHANNEL_ANALOG),
     _data(data)
 {
     _colour = SignalColours[probe->index % countof(SignalColours)];
@@ -137,8 +137,7 @@ void AnalogSignal::paint_trace(QPainter &p,
         //p.setPen(QPen(_colour, 2, Qt::SolidLine));
 
         QPointF *points = new QPointF[sample_count];
-        QPointF *point = points;
-
+        QPointF *point = points;        
         for (int64_t sample = start; sample != end; sample++) {
             const float x = (sample / samples_per_pixel -
                 pixels_offset) + left;
@@ -147,7 +146,6 @@ void AnalogSignal::paint_trace(QPainter &p,
         }
 
         p.drawPolyline(points, point - points);
-
         //delete[] samples;
         delete[] points;
     }

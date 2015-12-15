@@ -32,7 +32,7 @@
 #define WINVER 0x0501
 #define _WIN32_WINNT WINVER
 #include <Winsock2.h>
-#include <ddk/usbiodef.h>
+#include <usbiodef.h>
 #endif
 
 #ifdef __cplusplus
@@ -156,7 +156,8 @@ typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_d
 /** Data types used by sr_config_info(). */
 enum {
 	SR_T_UINT64 = 10000,
-	SR_T_CHAR,
+    SR_T_UINT8,
+    SR_T_CHAR,
 	SR_T_BOOL,
 	SR_T_FLOAT,
 	SR_T_RATIONAL_PERIOD,
@@ -175,6 +176,7 @@ enum {
 	SR_DF_ANALOG,
 	SR_DF_FRAME_BEGIN,
 	SR_DF_FRAME_END,
+    SR_DF_ABANDON,
 };
 
 /** Values for sr_datafeed_analog.mq. */
@@ -321,9 +323,11 @@ struct sr_datafeed_dso {
     int unit;
     /** Bitmap with extra information about the MQ. */
     uint64_t mqflags;
+    /** samplerate different from last packet */
+    gboolean samplerate_tog;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
-    float *data;
+    void *data;
 };
 
 struct sr_datafeed_analog {
@@ -389,7 +393,7 @@ struct sr_input_format {
 
 	/**
 	 * Load a file, parsing the input according to the file's format.
-	 *
+     *
 	 * This function will send datafeed packets to the session bus, so
 	 * the calling frontend must have registered its session callbacks
 	 * beforehand.
@@ -404,7 +408,7 @@ struct sr_input_format {
 	 *           the responsibility of the caller to free it later.
 	 * @param filename The name (and path) of the file to use.
 	 *
-	 * @return SR_OK upon success, a negative error code upon failure.
+     * @return SR_OK upon succcess, a negative error code upon failure.
 	 */
 	int (*loadfile) (struct sr_input *in, const char *filename);
 };
@@ -543,6 +547,8 @@ enum {
     SR_CHANNEL_LOGIC = 10000,
     SR_CHANNEL_DSO,
     SR_CHANNEL_ANALOG,
+    SR_CHANNEL_GROUP,
+    SR_CHANNEL_DECODER,
 };
 
 enum {
@@ -553,12 +559,13 @@ enum {
 
 struct sr_channel {
     /* The index field will go: use g_slist_length(sdi->channels) instead. */
-	int index;
+    uint16_t index;
 	int type;
 	gboolean enabled;
 	char *name;
 	char *trigger;
     uint64_t vdiv;
+    uint16_t vfactor;
     double vpos;
     uint8_t coupling;
     uint8_t trig_value;
@@ -586,6 +593,7 @@ struct sr_config_info {
 	int datatype;
 	char *id;
 	char *name;
+    char *label;
 	char *description;
 };
 
@@ -609,16 +617,17 @@ struct sr_status {
 
     uint8_t ch0_max;
     uint8_t ch0_min;
-    uint32_t ch0_period;
+    uint64_t ch0_period;
     uint32_t ch0_pcnt;
     uint8_t ch1_max;
     uint8_t ch1_min;
-    uint32_t ch1_period;
+    uint64_t ch1_period;
     uint32_t ch1_pcnt;
 
     uint32_t vlen;
     gboolean stream_mode;
     uint32_t sample_divider;
+    gboolean sample_divider_tog;
 
     gboolean zeroing;
     uint16_t ch0_vpos_mid;
@@ -727,6 +736,9 @@ enum {
 	/** Horizontal trigger position. */
 	SR_CONF_HORIZ_TRIGGERPOS,
 
+    /** Trigger hold off time */
+    SR_CONF_TRIGGER_HOLDOFF,
+
 	/** Buffer size. */
 	SR_CONF_BUFFERSIZE,
 
@@ -744,6 +756,12 @@ enum {
     SR_CONF_COMB_SET,
     SR_CONF_ZERO,
     SR_CONF_ZERO_OVER,
+
+    /** status for dso channel */
+    SR_CONF_STATUS_PERIOD,
+    SR_CONF_STATUS_PCNT,
+    SR_CONF_STATUS_MAX,
+    SR_CONF_STATUS_MIN,
 
     /** Stream */
     SR_CONF_STREAM,
@@ -766,6 +784,12 @@ enum {
     /** Channel enable for dso channel. */
     SR_CONF_EN_CH,
 
+    /** Data lock */
+    SR_CONF_DATALOCK,
+
+    /** probe factor for dso channel. */
+    SR_CONF_FACTOR,
+
 	/** Trigger types.  */
 	SR_CONF_TRIGGER_TYPE,
 
@@ -787,6 +811,13 @@ enum {
     /** Device operation mode */
     SR_CONF_OPERATION_MODE,
 
+    /** Device channel mode */
+    SR_CONF_CHANNEL_MODE,
+
+    /** Signal max height **/
+    SR_CONF_MAX_HEIGHT,
+    SR_CONF_MAX_HEIGHT_VALUE,
+
     /** Device sample threshold */
     SR_CONF_THRESHOLD,
     SR_CONF_VTH,
@@ -796,6 +827,7 @@ enum {
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_MAX_LOGIC_SAMPLERATE,
     SR_CONF_MAX_LOGIC_SAMPLELIMITS,
+    SR_CONF_RLE_SAMPLELIMITS,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -805,6 +837,9 @@ enum {
 	/** Device options for a particular device. */
 	SR_CONF_DEVICE_OPTIONS,
     SR_CONF_DEVICE_CONFIGS,
+
+    /** Sessions */
+    SR_CONF_DEVICE_SESSIONS,
 
 	/** Session filename. */
 	SR_CONF_SESSIONFILE,
@@ -831,6 +866,11 @@ enum {
 	 * samples should be acquired).
 	 */
 	SR_CONF_LIMIT_SAMPLES,
+
+    /**
+     * The actual sample count received
+     */
+    SR_CONF_ACTUAL_SAMPLES,
 
 	/**
 	 * The device supports setting a frame limit (how many
@@ -902,13 +942,14 @@ enum {
 /** Device operation modes. */
 enum {
     /** Normal */
-    SR_OP_NORMAL = 0,
+    SR_OP_BUFFER = 0,
+    SR_OP_STREAM = 1,
     /** Internal pattern test mode */
-    SR_OP_INTERNAL_TEST = 1,
+    SR_OP_INTERNAL_TEST = 2,
     /** External pattern test mode */
-    SR_OP_EXTERNAL_TEST = 2,
+    SR_OP_EXTERNAL_TEST = 3,
     /** SDRAM loopback test mode */
-    SR_OP_LOOPBACK_TEST = 3,
+    SR_OP_LOOPBACK_TEST = 4,
 };
 
 /** Device threshold level. */
@@ -953,7 +994,7 @@ struct sr_dev_driver {
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
 	GSList *(*dev_list) (void);
-    GSList *(*dev_mode_list) (void);
+    GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
     int (*dev_clear) (void);
 
     int (*config_get) (int id, GVariant **data,
@@ -1016,6 +1057,7 @@ struct sr_session {
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
+    SERIAL_TRIGGER,
 };
 
 enum {
@@ -1040,14 +1082,15 @@ struct ds_trigger {
     unsigned char trigger1_inv[TriggerStages+1];
     char trigger0[TriggerStages+1][TriggerProbes];
     char trigger1[TriggerStages+1][TriggerProbes];
-    uint16_t trigger0_count[TriggerStages+1];
-    uint16_t trigger1_count[TriggerStages+1];
+    uint32_t trigger0_count[TriggerStages+1];
+    uint32_t trigger1_count[TriggerStages+1];
 };
 
 struct ds_trigger_pos {
     uint32_t real_pos;
     uint32_t ram_saddr;
-    unsigned char first_block[504];
+    uint32_t remain_cnt;
+    unsigned char first_block[500];
 };
 
 #include "proto.h"

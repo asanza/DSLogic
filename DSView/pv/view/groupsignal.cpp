@@ -47,7 +47,7 @@ const float GroupSignal::EnvelopeThreshold = 256.0f;
 
 GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
                          std::list<int> probe_index_list, int group_index) :
-    Trace(name, probe_index_list, DS_GROUP, group_index),
+    Trace(name, probe_index_list, SR_CHANNEL_GROUP, group_index),
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
@@ -196,13 +196,12 @@ const std::vector< std::pair<uint64_t, bool> > GroupSignal::cur_edges() const
 
 }
 
-void GroupSignal::paint_type_options(QPainter &p, int right, bool hover, int action)
+void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
-    (void)hover;
-    (void)action;
+    (void)pt;
 
     int y = get_y();
-    const QRectF group_index_rect = get_rect("groupIndex", y, right);
+    const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
     p.setPen(Qt::transparent);
@@ -222,6 +221,19 @@ void GroupSignal::paint_type_options(QPainter &p, int right, bool hover, int act
     }
     p.setPen(Qt::white);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
+}
+
+QRectF GroupSignal::get_rect(GroupSetRegions type, int y, int right)
+{
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+
+    if (type == CHNLREG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + Margin,
+            y - SquareWidth / 2,
+            SquareWidth * SquareNum, SquareWidth);
+    else
+        return QRectF(0, 0, 0, 0);
 }
 
 } // namespace view

@@ -67,8 +67,7 @@ public:
 
 	void append_payload(const sr_datafeed_logic &logic);
 
-    void get_samples(uint8_t *const data,
-        int64_t start_sample, int64_t end_sample) const;
+    uint8_t * get_samples(int64_t start_sample, int64_t end_sample) const;
 
 private:
 	void reallocate_mipmap_level(MipMapLevel &m);
@@ -90,15 +89,11 @@ public:
 		uint64_t start, uint64_t end,
 		float min_length, int sig_index);
 
-    int get_first_edge(uint64_t &edge_index, bool &edge,
-                       uint64_t start, uint64_t end,
-                       int sig_index, int edge_type,
-                       int flag_index, int flag);
+    bool get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end,
+                      float min_length, int sig_index);
 
-    void get_edges(std::vector<EdgePair> &edges,
-        uint64_t start, uint64_t end, int sig_index, int edge_type);
-
-    uint64_t get_min_pulse(uint64_t start, uint64_t end, int sig_index);
+    bool get_pre_edge(uint64_t &index, bool last_sample,
+                      float min_length, int sig_index);
 
 private:
 	uint64_t get_subsample(int level, uint64_t offset) const;

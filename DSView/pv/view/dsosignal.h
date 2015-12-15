@@ -43,10 +43,11 @@ class DsoSignal : public Signal
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;
+    static const double TrigMargin;
 
     static const int HitCursorMargin = 3;
-    static const quint64 vDialValueCount = 8;
-    static const quint64 vDialValueStep = 1000;
+    static const uint64_t vDialValueCount = 8;
+    static const uint64_t vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
     static const uint64_t hDialValueCount = 28;
     static const uint64_t hDialValueStep = 1000;
@@ -62,6 +63,41 @@ private:
     static const int RightMargin;
 
 public:
+    enum DSO_MEASURE_TYPE {
+        DSO_MS_BEGIN = 0,
+        DSO_MS_FREQ,
+        DSO_MS_PERD,
+        DSO_MS_VMAX,
+        DSO_MS_VMIN,
+        DSO_MS_VRMS,
+        DSO_MS_VMEA,
+        DSO_MS_VP2P,
+        DSO_MS_END,
+    };
+
+    enum DsoSetRegions {
+        DSO_NONE = -1,
+        DSO_VDIAL,
+        DSO_HDIAL,
+        DSO_VDEC,
+        DSO_VINC,
+        DSO_HDEC,
+        DSO_HINC,
+        DSO_CHEN,
+        DSO_ACDC,
+        DSO_X1,
+        DSO_X10,
+        DSO_X100,
+    };
+
+private:
+    static const uint16_t MS_RectRad = 5;
+    static const uint16_t MS_IconSize = 16;
+    static const uint16_t MS_RectWidth = 120;
+    static const uint16_t MS_RectMargin = 10;
+    static const uint16_t MS_RectHeight = 25;
+
+public:
     DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
               boost::shared_ptr<pv::data::Dso> data,
               const sr_channel * const probe);
@@ -72,6 +108,7 @@ public:
     void set_view(pv::view::View *view);
 
 	void set_scale(float scale);
+    float get_scale();
 
     /**
      *
@@ -94,6 +131,18 @@ public:
     void set_acCoupling(uint8_t coupling);
     void set_trig_vpos(int pos);
     int get_trig_vpos() const;
+    void set_trigRate(double rate);
+    double get_trigRate() const;
+    void set_factor(uint64_t factor);
+    uint64_t get_factor();
+
+    bool load_settings();
+
+    /**
+      *
+      */
+    bool measure(const QPointF &p);
+    bool get_hover(uint64_t &index, QPointF &p, double &value);
 
     /**
       * auto set the vertical and Horizontal scale
@@ -104,11 +153,12 @@ public:
      * Gets the mid-Y position of this signal.
      */
     int get_zeroPos();
-
+    double get_zeroRate();
     /**
      * Sets the mid-Y position of this signal.
      */
     void set_zeroPos(int pos);
+    void set_zeroRate(double rate);
     void update_zeroPos();
 
     /**
@@ -141,8 +191,24 @@ public:
 
     QRectF get_trig_rect(int left, int right) const;
 
+    void set_ms_show(bool show);
+    bool get_ms_show() const;
+    bool get_ms_show_hover() const;
+    bool get_ms_gear_hover() const;
+    void set_ms_en(int index, bool en);
+    bool get_ms_en(int index) const;
+    QString get_ms_string(int index)  const;
+
+    QRectF get_rect(DsoSetRegions type, int y, int right);
+
+    bool mouse_double_click(int right, const QPoint pt);
+
+    bool mouse_press(int right, const QPoint pt);
+
+    bool mouse_wheel(int right, const QPoint pt, const int shift);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
 	void paint_trace(QPainter &p,
@@ -171,12 +237,27 @@ private:
 
     double _trig_vpos;
     double _zeroPos;
+    float _zero_off;
 
     uint8_t _max;
     uint8_t _min;
     double _period;
     bool _autoV;
     bool _autoH;
+
+    bool _hover_en;
+    uint64_t _hover_index;
+    QPointF _hover_point;
+    double _hover_value;
+
+    QRect _ms_gear_rect;
+    QRect _ms_show_rect;
+    QRect _ms_rect[DSO_MS_END-DSO_MS_BEGIN];
+    bool _ms_gear_hover;
+    bool _ms_show_hover;
+    bool _ms_show;
+    bool _ms_en[DSO_MS_END-DSO_MS_BEGIN];
+    QString _ms_string[DSO_MS_END-DSO_MS_BEGIN];
 };
 
 } // namespace view

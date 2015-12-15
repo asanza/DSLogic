@@ -45,9 +45,11 @@ SR_API int ds_trigger_init(void)
 {
     int i, j;
 
-    if (!(trigger = g_try_malloc0(sizeof(struct ds_trigger)))) {
-        sr_err("Trigger malloc failed.");
-        return SR_ERR_MALLOC;
+    if (!trigger) {
+        if (!(trigger = g_try_malloc0(sizeof(struct ds_trigger)))) {
+            sr_err("Trigger malloc failed.");
+            return SR_ERR_MALLOC;
+        }
     }
 
     trigger->trigger_en = 0;
@@ -77,6 +79,16 @@ SR_API int ds_trigger_destroy(void)
         g_free(trigger);
 
     return SR_OK;
+}
+
+/**
+ *
+ *
+ */
+
+SR_API struct ds_trigger *ds_trigger_get(void)
+{
+    return trigger;
 }
 
 /**
@@ -117,7 +129,7 @@ SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned ch
 
     return SR_OK;
 }
-SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint16_t trigger0_count, uint16_t trigger1_count)
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count)
 {
     assert(stage < TriggerStages);
     assert(probes <= TriggerProbes);
